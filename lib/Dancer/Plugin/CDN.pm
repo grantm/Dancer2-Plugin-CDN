@@ -46,7 +46,7 @@ sub _init_cdn {
     my $setting = plugin_setting();
 
     my $base = $setting->{base} || '/cdn/';
-    my $root = $setting->{root} || setting('public');
+    my $root = $setting->{root} || setting('public') || 'public';
 
     die "CDN root directory does not exist: '$root'\n" unless -d $root;
 
