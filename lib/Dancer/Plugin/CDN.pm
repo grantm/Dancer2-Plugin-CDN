@@ -110,9 +110,9 @@ CSS.
 
 =head1 FUNCTIONS
 
-One helper function is exported into the caller's namespace.  This function is
-also made available to be called from within your TT2 templates (probably won't
-work with other template engines).
+A single helper function is exported into the caller's namespace.  This
+function is also made available to be called from within your TT2 templates
+(probably won't work with other template engines).
 
 =head2 cdn_url
 
