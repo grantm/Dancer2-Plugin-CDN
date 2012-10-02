@@ -12,3 +12,4 @@ MANIFEST.SKIP
 \.old$
 \.bak$
 README.md
+^cover_db/
