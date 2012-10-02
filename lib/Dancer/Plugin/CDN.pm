@@ -18,6 +18,7 @@ my $cdn;
 register cdn_url => sub {
     my($path) = @_;
 
+    $cdn ||= _init_cdn();
     return $cdn->resolve($path);
 };
 
@@ -25,6 +26,7 @@ register cdn_url => sub {
 sub _send_cdn_content {
     my ($uri, $hash) = $cdn->unhash_uri(splat);
 
+    $cdn ||= _init_cdn();
     my $info = eval { $cdn->fileinfo($uri) };
 
     unless ( $info and $info->{hash} eq $hash ) {
@@ -59,11 +61,11 @@ sub _init_cdn {
         $args{plugins} = $plugins;
     }
 
-    $cdn = HTTP::CDN->new( %args );
-
     my($prefix) = $base =~ m{^(?:https?://[^/]+)?(.*)$};
     my $route = qr/${prefix}(.*)$/;
     get $route => \&_send_cdn_content;
+
+    return HTTP::CDN->new( %args );
 }
 
 
@@ -72,7 +74,6 @@ hook 'before_template_render' => sub {
     $tokens->{'cdn_url'}  = \&cdn_url;
 };
 
-_init_cdn;
 
 register_plugin;
 
