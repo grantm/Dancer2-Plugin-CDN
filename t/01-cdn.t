@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 use Test::More import => ['!pass'];
+use HTTP::Date qw(str2time);
+
+use constant ONE_YEAR => 365 * 24 * 60 * 60;
 
 my $test_root;
 BEGIN {
@@ -52,6 +55,12 @@ chomp(my $url = $resp->{content});
 $resp = dancer_response(GET => $url);
 is $resp->{status}, 200, "GET $url => status 200";
 like $resp->{content}, qr/h1 { color: red; }/, 'css/style.css content';
+
+ok $resp->header('Expires'), 'Expires header';
+ok $resp->header('Last-Modified'), 'Last-Modified header';
+ok $resp->header('Cache-Control'), 'Cache-Control header';
+my $lifetime = str2time( $resp->header('Expires') ) - time();
+ok $lifetime > ONE_YEAR, 'future expiry';
 
 $resp = dancer_response(GET => '/page2');
 is $resp->{status}, 200, "GET /page2 => status 200";
