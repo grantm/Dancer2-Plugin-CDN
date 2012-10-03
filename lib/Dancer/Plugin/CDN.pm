@@ -24,9 +24,9 @@ register cdn_url => sub {
 
 
 sub _send_cdn_content {
+    $cdn ||= _init_cdn();
     my ($uri, $hash) = $cdn->unhash_uri(splat);
 
-    $cdn ||= _init_cdn();
     my $info = eval { $cdn->fileinfo($uri) };
 
     unless ( $info and $info->{hash} eq $hash ) {
@@ -61,11 +61,17 @@ sub _init_cdn {
         $args{plugins} = $plugins;
     }
 
+    return HTTP::CDN->new( %args );
+}
+
+
+{   # Set up route handler to serve responses to rewritten URLS
+
+    my $base = plugin_setting->{base} || '/cdn/';
     my($prefix) = $base =~ m{^(?:https?://[^/]+)?(.*)$};
     my $route = qr/${prefix}(.*)$/;
-    get $route => \&_send_cdn_content;
 
-    return HTTP::CDN->new( %args );
+    get $route => \&_send_cdn_content;
 }
 
 
