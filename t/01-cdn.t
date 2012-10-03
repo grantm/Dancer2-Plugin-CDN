@@ -15,8 +15,8 @@ BEGIN {
 
 {
     use Dancer;
-    use Dancer::Plugin::CDN;
 
+    # Settings must be loaded before plugin
     setting(plugins => {
         CDN => {
             root    => $test_root,
@@ -24,6 +24,9 @@ BEGIN {
             plugins => [ 'CSS' ],
         }
     });
+
+    eval "use Dancer::Plugin::CDN";
+    die "$@" if $@;
 
     get '/status' => sub {
         return "OK";
