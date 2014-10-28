@@ -1,8 +1,8 @@
 
 use Test::More tests => 1;
 
-use Dancer::Plugin::CDN;
+use Dancer2::Plugin::CDN;
 
-ok(1, "Successfully loaded Dancer::Plugin::CDN via 'use'");
+ok(1, "Successfully loaded Dancer2::Plugin::CDN via 'use'");
 
-diag( "Testing Dancer::Plugin::CDN $Dancer::Plugin::CDN::VERSION, Perl $], $^X" );
+diag( "Testing Dancer2::Plugin::CDN $Dancer2::Plugin::CDN::VERSION, Perl $], $^X" );

@@ -1,50 +1,86 @@
-package Dancer::Plugin::CDN;
+package Dancer2::Plugin::CDN;
 
 use warnings;
 use strict;
 
-use Dancer ':syntax';
-use Dancer::Plugin;
+use Dancer2::Plugin;
 use HTTP::CDN;
 use HTTP::Date;
 
 
 use constant EXPIRES => 315_576_000;  # approx 10 years
 
+my %cdn_cache;
 
-my $cdn;
+
+on_plugin_import {
+    my $dsl = shift;
+    my $app = $dsl->app;
+    my $cdn = _cache_cdn_for_app($app);
+
+    my $cdn_url_mapper = sub {
+        my($path) = @_;
+        return $cdn->resolve($path);
+    };
+
+    $app->add_hook(
+        Dancer2::Core::Hook->new(
+            name => 'before_template_render',
+            code => sub {
+                my $tokens = shift;
+                $tokens->{'cdn_url'} = $cdn_url_mapper;
+            },
+        )
+    );
+
+    my $base = plugin_setting->{base} || '/cdn/';
+    my($prefix) = $base =~ m{^(?:https?://[^/]+)?(.*)$};
+    my $route = qr{$prefix(.*)$};
+    $app->add_route(
+        method  => 'get',
+        regexp  => $route,
+        code    => sub {
+            my $app = shift;
+            _send_cdn_content($app);
+        },
+    );
+};
 
 
 register cdn_url => sub {
-    my($path) = @_;
+    my($dsl, $path) = @_;
 
-    $cdn ||= _init_cdn();
+    my $cdn = _retrieve_cdn_for_app($dsl->app);
     return $cdn->resolve($path);
 };
 
 
 sub _send_cdn_content {
-    $cdn ||= _init_cdn();
-    my ($uri, $hash) = $cdn->unhash_uri(splat);
+    my($app) = @_;
+    my $cdn = _retrieve_cdn_for_app($app);
+    my($uri_path) = $app->request->splat;
+    my($uri, $hash) = $cdn->unhash_uri($uri_path);
 
     my $info = eval { $cdn->fileinfo($uri) };
+    my $resp = $app->response;
 
     unless ( $info and $info->{hash} eq $hash ) {
-        status 'not_found';
+        $resp->status('not_found');
         return 'Not Found';
     }
 
-    status( 200 );
-    content_type( $info->{mime}->type );
-    header('Last-Modified'  => HTTP::Date::time2str($info->{stat}->mtime));
-    header('Expires'        => HTTP::Date::time2str(time + EXPIRES));
-    header('Cache-Control'  => 'max-age=' . EXPIRES . ', public');
+    $resp->status( 200 );
+    $resp->content_type( $info->{mime}->type );
+    $resp->header('Last-Modified' => HTTP::Date::time2str($info->{stat}->mtime));
+    $resp->header('Expires'       => HTTP::Date::time2str(time + EXPIRES));
+    $resp->header('Cache-Control' => 'max-age=' . EXPIRES . ', public');
     return $cdn->filedata($uri);
-
 }
 
 
-sub _init_cdn {
+sub _cache_cdn_for_app {
+    my($app) = @_;
+
     my $setting = plugin_setting();
 
     my $base = $setting->{base} || '/cdn/';
@@ -61,39 +97,28 @@ sub _init_cdn {
         $args{plugins} = $plugins;
     }
 
-    return HTTP::CDN->new( %args );
+    return $cdn_cache{ $app->name } = HTTP::CDN->new( %args );
 }
 
 
-{   # Set up route handler to serve responses to rewritten URLS
-
-    my $base = plugin_setting->{base} || '/cdn/';
-    my($prefix) = $base =~ m{^(?:https?://[^/]+)?(.*)$};
-    my $route = qr/${prefix}(.*)$/;
-
-    get $route => \&_send_cdn_content;
+sub _retrieve_cdn_for_app {
+    my($app) = @_;
+    return $cdn_cache{ $app->name };
 }
 
-
-hook 'before_template_render' => sub {
-    my $tokens = shift;
-    $tokens->{'cdn_url'}  = \&cdn_url;
-};
-
-
-register_plugin;
+register_plugin for_versions => [ 2 ] ;
 
 1;
 
 
 =head1 NAME
 
-Dancer::Plugin::CDN - Serve static files with unique URLs and far-future expiry
+Dancer2::Plugin::CDN - Serve static files with unique URLs and far-future expiry
 
 
 =head1 SYNOPSIS
 
-  use Dancer::Plugin::CDN;
+  use Dancer2::Plugin::CDN;
 
   # Generate a CDN URL for a static file
 
@@ -162,11 +187,11 @@ URLs (e.g.: for image files) to the CDN scheme.
 
 =item * Bug reports and feature requests
 
-L<https://github.com/grantm/Dancer-Plugin-CDN/issues>
+L<https://github.com/grantm/Dancer2-Plugin-CDN/issues>
 
 =item * Source Code Repository
 
-L<http://github.com/grantm/Dancer-Plugin-CDN/>
+L<http://github.com/grantm/Dancer2-Plugin-CDN/>
 
 =back
 

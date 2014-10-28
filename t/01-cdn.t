@@ -14,7 +14,7 @@ BEGIN {
 }
 
 {
-    use Dancer;
+    use Dancer2;
 
     # Settings must be loaded before plugin
     setting(plugins => {
@@ -25,7 +25,7 @@ BEGIN {
         }
     });
 
-    eval "use Dancer::Plugin::CDN";
+    eval "use Dancer2::Plugin::CDN";
     die "$@" if $@;
 
     get '/status' => sub {
@@ -42,7 +42,7 @@ BEGIN {
 
 }
 
-use Dancer::Test;
+use Dancer2::Test;
 
 route_exists [GET => '/status'], 'home page route';
 

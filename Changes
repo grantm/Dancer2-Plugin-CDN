@@ -1,11 +1,4 @@
 Revision history for {{$dist->name}}
 
 {{$NEXT}}
-
-1.001     2012-10-04 06:38:14 Pacific/Auckland
-    - Initialise route handler at module load time - after encountering
-      problems on Starman with preload enabled
-    - Add more tests
-
-1.000     2012-10-02 23:22:47 Pacific/Auckland
-    - Initial release
+    - Port Dancer::Plugin::CDN to Dancer2 plugin API
